@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Teleprompter</title>
+
+<style>
+  body {
+    margin: 0;
+    background: black;
+    color: white;
+    font-family: monospace;
+    overflow: hidden;
+  }
+
+  #controls {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: #111;
+    padding: 8px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 10;
+  }
+
+  textarea {
+    width: 300px;
+    height: 120px;
+    background: #000;
+    color: white;
+    border: 1px solid #555;
+  }
+
+  button {
+    background: #222;
+    color: white;
+    border: 1px solid #555;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #333;
+  }
+
+  #prompter {
+    position: absolute;
+    top: 160px;
+    width: 100%;
+    text-align: center;
+    font-size: 32px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .host {
+    color: #00ffcc;
+  }
+
+  .cohost {
+    color: #ffcc00;
+  }
+
+  .mirrored {
+    transform: scaleX(-1);
+  }
+
+  .hand {
+    font-size: 32px;
+    cursor: pointer;
+    user-select: none;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="controls">
+  <textarea id="scriptInput" placeholder="Type your script here...
+Use:
+[H] Host
+[C] Co-host"></textarea>
+
+  <button onclick="saveScript()">Save</button>
+  <button onclick="loadScript()">Load</button>
+
+  <label>
+    Speed:
+    <input type="range" min="0.2" max="5" step="0.1" id="speed" value="1">
+  </label>
+
+  <label>
+    <input type="checkbox" id="mirrorToggle">
+    Mirror
+  </label>
+
+  <span class="hand" onclick="slowDown()">✊</span>
+  <span class="hand" onclick="keepSpeed()">✋</span>
+  <span class="hand" onclick="speedUp()">✌️</span>
+</div>
+
+<div id="prompter"></div>
+
+<script>
+  const input = document.getElementById("scriptInput");
+  const prompter = document.getElementById("prompter");
+  const speedSlider = document.getElementById("speed");
+  const mirrorToggle = document.getElementById("mirrorToggle");
+
+  let scrollSpeed = 1;
+  let scrollPosition = 0;
+
+  function formatScript(text) {
+    return text
+      .replace(/\[H\](.*)/g, '<span class="host">$1</span>')
+      .replace(/\[C\](.*)/g, '<span class="cohost">$1</span>');
+  }
+
+  function updatePrompter() {
+    prompter.innerHTML = formatScript(input.value);
+  }
+
+  input.addEventListener("input", updatePrompter);
+
+  function saveScript() {
+    localStorage.setItem("teleprompterScript", input.value);
+  }
+
+  function loadScript() {
+    const saved = localStorage.getItem("teleprompterScript");
+    if (saved) {
+      input.value = saved;
+      updatePrompter();
+    }
+  }
+
+  mirrorToggle.addEventListener("change", () => {
+    prompter.classList.toggle("mirrored", mirrorToggle.checked);
+  });
+
+  function scrollLoop() {
+    scrollSpeed = parseFloat(speedSlider.value);
+    scrollPosition -= scrollSpeed;
+    prompter.style.transform = `translateY(${scrollPosition}px)` +
+      (mirrorToggle.checked ? " scaleX(-1)" : "");
+    requestAnimationFrame(scrollLoop);
+  }
+
+  function speedUp() {
+    speedSlider.value = Math.min(5, parseFloat(speedSlider.value) + 0.5);
+  }
+
+  function slowDown() {
+    speedSlider.value = Math.max(0.2, parseFloat(speedSlider.value) - 0.5);
+  }
+
+  function keepSpeed() {
+    // intentionally does nothing — visual cue only
+  }
+
+  updatePrompter();
+  scrollLoop();
+</script>
+
+</body>
+</html>
